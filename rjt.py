@@ -2,9 +2,12 @@
 
 import requests
 import json
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import datetime
 import sys
+fileloc='/home/ubuntu/website/website/yourapp/static/'
 
 quick={'Holloway Circus (inbound)':(43000305101,43000203501)}
 
@@ -16,7 +19,7 @@ thresh=1.2
 
 def inseconds(tmp):
 	tmp=tmp.split(':')
-	return (int(tmp[1])*60)+int(tmp[2])
+	return float((int(tmp[1])*60)+int(tmp[2]))
 	
 def getdata(route,day=0):
 
@@ -66,7 +69,7 @@ def totalday(res,ct):
 	j=[[datetime.datetime.strptime(a[3],'%Y-%m-%dT%H:%M:%S').time(),(a[2]/a[1])>thresh] for a in res]
 	k=[a[0].hour+a[0].minute/60.0 for a in j if a[1]]
 	m=[a[0].hour+a[0].minute/60.0 for a in j if not a[1]]
-	size=[(a[2]/a[1])*128 for a in res if (a[2]/a[1])>thresh]
+	size=[(a[2]/a[1])*64 for a in res if (a[2]/a[1])>thresh]
 	#print ([a[1] for a in res])
 
 	plt.scatter([a for a in k],[ct for n in range(len(k))],c='red',marker='d',s=size,edgecolors='face')
@@ -86,28 +89,31 @@ def drawgraph(res):
 
 
 if __name__=='__main__':
-	plt.style.use('ggplot')
-	print ("is it fucked?")
 	import time
-	#a=getdata(back['const hill']
-	ct=1
-	for n in quick:
-		for j in [28,21,14,7,0]:
-			a=getdata(quick[n],day=j)
-			if a==False:
-				continue
-			print (n,quickyaynay(a),totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
-			ct+=1
-			time.sleep(1)
+	while True:
+		plt.style.use('ggplot')
+		#print ("is it fucked?")
+
+		#a=getdata(back['const hill']
 		ct=1
-		plt.title(n+"\nAndy's Integrated Command and Control Centre")
-		x1,x2,y1,y2 = plt.axis()
-		plt.axis((5,24,y1,y2))
-		plt.xlabel('Hour Starting')
-		plt.ylabel('Day (7,Mon - 1,Sun)')
-		#plt.savefig('jtpics/'+n+'.png')
-		plt.show()
-		plt.close()
+		for n in quick:
+			for j in range(15):#[30,23,16,9,2]:
+				a=getdata(quick[n],day=j)
+				if a==False:
+					continue
+				print (n,quickyaynay(a),totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
+				ct+=1
+				time.sleep(1)
+			ct=1
+			plt.title(n+"\nUpdated "+str(datetime.datetime.now()))
+			x1,x2,y1,y2 = plt.axis()
+			plt.axis((5,24,y1,y2))
+			plt.xlabel('Hour Starting')
+			plt.ylabel('Days (today=1, yesterday=2)')
+			plt.savefig(fileloc+'bus.png')
+			#plt.show()
+			plt.close()
+		time.sleep(900)
 
 # how many times 10% above threshold
 # maximum delay
