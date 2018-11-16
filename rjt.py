@@ -9,6 +9,8 @@ import datetime
 import sys
 fileloc='/home/ubuntu/website/website/yourapp/static/'
 
+fileloc=''
+
 quick={'Holloway Circus (inbound)':(43000305101,43000203501)}
 
 routes={'Holloway Circus (inbound)':(43000305101,43000203501),'Five Ways (inbound)':(43000301102,43000207202),'Spring Hill (inbound)':(43000286602,43000207202),'St Chads (inbound)':(43000270404,43000208501),'Dartmouth Circus (inbound)':(43000253404,43000207601),'Curzon Circus (inbound)':(43000241402,43002104401),'Garrison Circus (inbound)':(43000236202,43000211304),'Bordesley Circus (inbound)':(43000230203,43000202203),'Camp Hill Circus (inbound)':(43000220102,43000211304),'Bradford Street -  Markets (inbound)':(43000218202,43000202301),'Belgrave Interchange (inbound)':(43000343202,43000203902)}
@@ -26,7 +28,7 @@ def getdata(route,day=0):
 	n=datetime.timedelta(days=day)
 	dy=datetime.datetime.now()-n
 	dys=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-	print (dys[dy.weekday()])
+	#print (dys[dy.weekday()])
 	tm=dy.strftime('%Y-%m-%d')
 	#print (tm)
 	
@@ -50,7 +52,7 @@ def getdata(route,day=0):
 
 	res=[]
 	for n in r[u'JourneyTimes']:
-		res.append([n[u'ScheduledDepartureTime'],inseconds(n[u'ScheduledJourneyTime']),inseconds(n[u'RealJourneyTime']),n[u'RealDepartureTime']])
+		res.append([n[u'ScheduledDepartureTime'],inseconds(n[u'ScheduledJourneyTime']),inseconds(n[u'RealJourneyTime']),n[u'RealDepartureTime'],dys[dy.weekday()]])
 	return res
 
 def quickyaynay(res):
@@ -80,13 +82,19 @@ def drawgraph(res):
 	retval=[a[2]/a[1] for a in res]
 	cols=['yellow' if a[2]/a[1]<0.9 else 'green' if 0.9<a[2]/a[1]<1.1 else 'red' for a in res]
 	times=[a[0].split('T')[1][:5] for a in res]
-	
+
 	plt.bar(range(len(res)),[a[2] for a in res],color=cols)
 	plt.plot(range(len(res)),[a[1] for a in res],color='blue',linewidth=4)
 	plt.xticks(range(len(res)), times,rotation=60)
 	plt.show()
 	return retval
 
+def cumulativedelayminutes(res):
+	if len(res)==0:
+		return 0
+	print (datetime.datetime.strptime(res[0][3],'%Y-%m-%dT%H:%M:%S').date())
+	print (sum([a[2]-a[1] if a[2]-a[1]>=0 else 0 for a in res])/60)
+	return sum([a[2]-a[1] if a[2]-a[1]>=0 else 0 for a in res])/60
 
 if __name__=='__main__':
 	import time
@@ -96,12 +104,17 @@ if __name__=='__main__':
 
 		#a=getdata(back['const hill']
 		ct=1
+		g2=[]
 		for n in quick:
-			for j in range(15):#[30,23,16,9,2]:
+			for j in range(40):#[30,23,16,9,2]:
 				a=getdata(quick[n],day=j)
 				if a==False:
 					continue
 				print (n,quickyaynay(a),totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
+				try:
+					g2.append([a[0][4],cumulativedelayminutes(a)])
+				except:
+					pass
 				ct+=1
 				time.sleep(1)
 			ct=1
@@ -109,10 +122,17 @@ if __name__=='__main__':
 			x1,x2,y1,y2 = plt.axis()
 			plt.axis((5,24,y1,y2))
 			plt.xlabel('Hour Starting')
-			plt.ylabel('Days (today=1, yesterday=2)')
+			plt.ylabel('Days')
 			plt.savefig(fileloc+'bus.png')
 			#plt.show()
 			plt.close()
+			g2.reverse()
+			plt.bar(range(len(g2)),[b[1] for b in g2])
+			plt.xticks(range(len(g2)),[a[0] for a in g2],rotation=45)
+			plt.title(n+" Bus Delays\nUpdated "+str(datetime.datetime.now()))
+			plt.xlabel('Day')
+			plt.ylabel('Delay minutes')
+			plt.savefig(fileloc+"busdelay.png")
 		time.sleep(900)
 
 # how many times 10% above threshold
