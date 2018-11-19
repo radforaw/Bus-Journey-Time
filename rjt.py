@@ -172,8 +172,8 @@ if __name__=='__main__':
 			plt.ylabel('Delay minutes')
 			plt.savefig(fileloc+"busdelay.png")
 			plt.close()
-			sys.exit(0)
-		#time.sleep(900)
+			#sys.exit(0)
+		time.sleep(900)
 
 # how many times 10% above threshold
 # maximum delay
