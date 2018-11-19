@@ -7,13 +7,16 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import datetime
 import sys
+import dt
+import numpy as np
+
 fileloc='/home/ubuntu/website/website/yourapp/static/'
 
-fileloc=''
+#fileloc=''
 
 quick={'Holloway Circus (inbound)':(43000305101,43000203501)}
 
-routes={'Holloway Circus (inbound)':(43000305101,43000203501),'Five Ways (inbound)':(43000301102,43000207202),'Spring Hill (inbound)':(43000286602,43000207202),'St Chads (inbound)':(43000270404,43000208501),'Dartmouth Circus (inbound)':(43000253404,43000207601),'Curzon Circus (inbound)':(43000241402,43002104401),'Garrison Circus (inbound)':(43000236202,43000211304),'Bordesley Circus (inbound)':(43000230203,43000202203),'Camp Hill Circus (inbound)':(43000220102,43000211304),'Bradford Street -  Markets (inbound)':(43000218202,43000202301),'Belgrave Interchange (inbound)':(43000343202,43000203902)}
+routes={'Holloway Circus (inbound)':(43000305101,43000203501),'Five Ways (inbound)':(43000301102,43000207102),'Spring Hill (inbound)':(43000286602,43000207202),'St Chads (inbound)':(43000276503,43000208501),'Dartmouth Circus (inbound)':(43000253404,43000207601),'Curzon Circus (inbound)':(43000241402,43002104401),'Garrison Circus (inbound)':(43000236202,43000211304),'Bordesley Circus (inbound)':(43000230203,43000202203),'Camp Hill Circus (inbound)':(43000220102,43000211304),'Bradford Street -  Markets (inbound)':(43000218202,43000202301),'Belgrave Interchange (inbound)':(43000343202,43000203902)}
 
 back={'harborne (outbound)':(43000205601,43000305201),'Five Ways (outbound)':(43000205601,43003003501),'Spring Hill (outbound)':(43000205601,43002870101),'St Chads (outbound)':(43000207205,43000276301),'Dartmouth (outbound)':(43000252102,43000253601),'Curzon (outbound)':(43002104402,43000241502),'Garrison (outbound)':(43000212601,43000236402),'Camp Hill (outbound)':(43000211501,43000220201),'Bordesley (outbound)':(43000211502,43000230302),'Moseley (outbound)':(43002103506,43000218101),'Pershore (outbound)':(43000213202,43000343201)}
 
@@ -27,6 +30,10 @@ def getdata(route,day=0):
 
 	n=datetime.timedelta(days=day)
 	dy=datetime.datetime.now()-n
+	tf=False
+	if day==0:
+		tf=True
+	#print ('aaa ',dy,tf)
 	dys=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
 	#print (dys[dy.weekday()])
 	tm=dy.strftime('%Y-%m-%d')
@@ -34,6 +41,7 @@ def getdata(route,day=0):
 	
 	url='https://realjourneytime.azurewebsites.net/index.php?method=Journeys&fromCode='+str(route[0])+'&toCode='+str(route[1])+'&dateString='+tm
 	#print (url)
+	'''
 	a= False
 	tries=5
 	while a==False and tries>0:
@@ -44,15 +52,20 @@ def getdata(route,day=0):
 			tries-=1
 	if a==False:
 		return False
+	'''
+	l=dt.rcache()
 	try:
-		r=json.loads(a.content)
+		r=json.loads(l.get(url,nc=tf))
 	except:
 		return False
-
+	finally:
+		l.cls()
+	#print (r)
 
 	res=[]
 	for n in r[u'JourneyTimes']:
 		res.append([n[u'ScheduledDepartureTime'],inseconds(n[u'ScheduledJourneyTime']),inseconds(n[u'RealJourneyTime']),n[u'RealDepartureTime'],dys[dy.weekday()]])
+	#print (res)
 	return res
 
 def quickyaynay(res):
@@ -95,6 +108,16 @@ def cumulativedelayminutes(res):
 	print (datetime.datetime.strptime(res[0][3],'%Y-%m-%dT%H:%M:%S').date())
 	print (sum([a[2]-a[1] if a[2]-a[1]>=0 else 0 for a in res])/60)
 	return sum([a[2]-a[1] if a[2]-a[1]>=0 else 0 for a in res])/60
+	
+def lastxweeks(dt,w):
+	days=('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
+	ret=[]
+	for n in range(7):
+		for m in range(w-1,-1,-1):
+			ret.append([m,days[n],(dt+datetime.timedelta(days=(n-dt.weekday())-(m*7))).date()])
+		ret.append([m,'',datetime.datetime.now().date()])
+	return ret
+
 
 if __name__=='__main__':
 	import time
@@ -103,20 +126,16 @@ if __name__=='__main__':
 		#print ("is it fucked?")
 
 		#a=getdata(back['const hill']
+		#quick=routes
 		ct=1
 		g2=[]
 		for n in quick:
-			for j in range(40):#[30,23,16,9,2]:
+			for j in range(22):#[30,23,16,9,2]:
 				a=getdata(quick[n],day=j)
 				if a==False:
 					continue
 				print (n,quickyaynay(a),totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
-				try:
-					g2.append([a[0][4],cumulativedelayminutes(a)])
-				except:
-					pass
 				ct+=1
-				time.sleep(1)
 			ct=1
 			plt.title(n+"\nUpdated "+str(datetime.datetime.now()))
 			x1,x2,y1,y2 = plt.axis()
@@ -126,14 +145,35 @@ if __name__=='__main__':
 			plt.savefig(fileloc+'bus.png')
 			#plt.show()
 			plt.close()
-			g2.reverse()
-			plt.bar(range(len(g2)),[b[1] for b in g2])
-			plt.xticks(range(len(g2)),[a[0] for a in g2],rotation=45)
+			
+			wks=8
+			thing=lastxweeks(datetime.datetime.now(),wks)
+			g2=[]
+			for a in thing:
+				l= ((datetime.datetime.now().date()-a[2]).days)
+				print (l)
+				if l>0:
+					#try:
+					g2.append([a[1],cumulativedelayminutes(getdata(quick[n],day=l))])
+					#except:
+						#g2.append([a[1],0])
+				else:
+						g2.append([a[1],0])
+				print (g2[-1])
+			col=[z for z in ['red','green','blue','purple','black','orange','grey']for zz in range(wks+1)]
+			print (col)
+				
+			plt.bar(range(len(g2)),[b[1] for b in g2],color=col)
+			start, end = plt.gca().get_xlim()
+			print (start,end)
+			plt.xticks(range(int(len(g2))),[a[0] for a in g2],rotation=45)
 			plt.title(n+" Bus Delays\nUpdated "+str(datetime.datetime.now()))
 			plt.xlabel('Day')
 			plt.ylabel('Delay minutes')
 			plt.savefig(fileloc+"busdelay.png")
-		time.sleep(900)
+			plt.close()
+			sys.exit(0)
+		#time.sleep(900)
 
 # how many times 10% above threshold
 # maximum delay
