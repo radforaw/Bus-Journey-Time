@@ -130,7 +130,7 @@ if __name__=='__main__':
 		ct=1
 		g2=[]
 		for n in quick:
-			for j in range(22):#[30,23,16,9,2]:
+			for j in range(28):#[30,23,16,9,2]:
 				a=getdata(quick[n],day=j)
 				if a==False:
 					continue
