@@ -10,6 +10,7 @@ import datetime
 import sys
 import dt
 import numpy as np
+import csv
 
 #fileloc='/home/ubuntu/website/website/yourapp/static/'
 
@@ -52,7 +53,7 @@ def getdata(route,day=0):
 
 def periods(res):
 	smooth=[(sum(res[n:n+4])/len(res[n:n+4]))>thresh+.2 for n in range(len(res)-5)]
-	print (simplerldecoder(smooth))
+	return simplerldecoder(smooth)
 	
 
 def simplerldecoder(data):
@@ -62,18 +63,20 @@ def simplerldecoder(data):
 	currentstart=0
 
 	for x in data:
-		if x==1:
+		if x:
 			if not flag:
 				flag=True
 				result[positioncounter]=1
 				currentstart=positioncounter
 			else:
 				result[currentstart]+=1
-		if x==0 and flag:
+		if not x and flag:
 			flag=False
 		positioncounter+=1
 	return result
 
+def datetimer(string):
+	return datetime.datetime.strptime(string,'%Y-%m-%dT%H:%M:%SZ')
 
 def quickyaynay(res):
 	if len(res)==0:
@@ -81,8 +84,17 @@ def quickyaynay(res):
 	retval=[a[2]/a[1] for a in res[-5:]]
 	print ([a[2]/a[1] for a in res])
 	print(periods([a[2]/a[1] for a in res]))
+	rl= periods([a[2]/a[1] for a in res])
+	ret2=[]
+	for j in rl:
+		start=j
+		finish=j+rl[j]
+		if finish-start>3:
+			sttime=datetimer(res[start][3])
+			fintime=datetimer(res[finish][3])
+			ret2.append([sttime,fintime.time(),round(((fintime-sttime).seconds/3600),1),round(sorted([n[2]/n[1] for n in res[start:finish]])[int((finish-start)*.85)],1)])
 	###analyse this ^^^....
-	return sum([a>thresh for a in retval])
+	return sum([a>thresh for a in retval]),ret2
 	
 def totalday(res,ct):
 	if len(res)==0:
@@ -132,14 +144,26 @@ if __name__=='__main__':
 	while True:
 		plt.style.use('ggplot')
 		#quick=routes
+		summ=[]
 		for n in quick:
 			ct=1
-			for j in range(1):#[30,23,16,9,2]:
+			for j in range(28):#[30,23,16,9,2]:
 				a=getdata(quick[n],day=j)
 				if a==False:
 					continue
-				print (n,quickyaynay(a),totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
+				qyn=quickyaynay(a)
+				try:
+					summ+=qyn[1]
+				except:
+					qyn=['None']
+				print (n,qyn[0],totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
 				ct+=1
+			days=('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
+			with open('tesfile.csv','w') as csvfile:
+				w=csv.writer(csvfile)
+				w.writerow(['Location','date','time','duration','intensity (85%ile delay)'])
+				for dis in sorted(summ,reverse=True,key= lambda x:x[2]*x[3]):
+					w.writerow([n,days[dis[0].weekday()]+','+str(dis[0].date()),str(str(dis[0].time())+'-'+str(dis[1])),dis[2],dis[3]])
 			plt.title(n+"\nUpdated "+str(datetime.datetime.now()),fontsize=10)
 			x1,x2,y1,y2 = plt.axis()
 			plt.axis((5,24,y1,y2))
