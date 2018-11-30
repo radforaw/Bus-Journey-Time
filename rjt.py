@@ -11,11 +11,11 @@ import sys
 import dt
 import numpy as np
 
-fileloc='/home/ubuntu/website/website/yourapp/static/'
+#fileloc='/home/ubuntu/website/website/yourapp/static/'
 
-#fileloc=''
+fileloc=''
 
-#quick={'Holloway-Circus-inbound':(43000305101,43000203501)}
+quick={'Holloway-Circus-inbound':(43000305101,43000203501)}
 
 routes={'Holloway-Circus-inbound':(43000305101,43000203501),'Five-Ways-inbound':(43000301102,43000207102),'Spring-Hill-inbound':(43000286602,43000207202),'St-Chads-inbound':(43000276503,43000208501),'Dartmouth-Circus-inbound':(43000253404,43000207601),'Curzon-Circus-inbound':(43000241402,43002104401),'Garrison-Circus-inbound':(43000236202,43000211304),'Bordesley-Circus-inbound':(43000230203,43000202203),'Camp-Hill-Circus-inbound':(43000220102,43000211304),'Bradford-Street----Markets-inbound':(43000218202,43000202301),'Belgrave-Interchange-inbound':(43000343202,43000203902),'harborne-outbound':(43000205601,43000305201),'Five-Ways-outbound':(43000205601,43003003501),'Spring-Hill-outbound':(43000205601,43002870101),'St-Chads-outbound':(43000207205,43000276301),'Dartmouth-outbound':(43000252102,43000253601),'Curzon-outbound':(43002104402,43000241502),'Garrison-outbound':(43000212601,43000236402),'Camp-Hill-outbound':(43000211501,43000220201),'Bordesley-outbound':(43000211502,43000230302),'Moseley-outbound':(43002103506,43000218101),'Pershore-outbound':(43000213202,43000343201)}
 
@@ -50,12 +50,23 @@ def getdata(route,day=0):
 	#print (res)
 	return res
 
+def periods(res):
+	smooth=[(sum(res[n:n+4])/len(res[n:n+4]))>thresh+.2 for n in range(len(res)-5)]
+	print (smooth)
+	'''res=[]
+	last=Falsr
+	for n in smooth:
+		if 
+	'''
+	
+
 def quickyaynay(res):
 	if len(res)==0:
 		return False
 	retval=[a[2]/a[1] for a in res[-5:]]
 	print ([a[2]/a[1] for a in res])
-	#pri
+	print(periods([a[2]/a[1] for a in res]))
+	###analyse this ^^^....
 	return sum([a>thresh for a in retval])
 	
 def totalday(res,ct):
@@ -105,10 +116,10 @@ if __name__=='__main__':
 	import time
 	while True:
 		plt.style.use('ggplot')
-		quick=routes
+		#quick=routes
 		for n in quick:
 			ct=1
-			for j in range(28):#[30,23,16,9,2]:
+			for j in range(1):#[30,23,16,9,2]:
 				a=getdata(quick[n],day=j)
 				if a==False:
 					continue
@@ -122,7 +133,7 @@ if __name__=='__main__':
 			plt.savefig(fileloc+n+'bus.png',dpi=150)
 			plt.close()
 			
-			wks=8
+			'''wks=8
 			thing=lastxweeks(datetime.datetime.now(),wks)
 			g2=[]
 			for a in thing:
@@ -141,6 +152,8 @@ if __name__=='__main__':
 			plt.ylabel('Delay minutes')
 			plt.savefig(fileloc+n+"busdelay.png")
 			plt.close()
+			'''
+			sys.exit(0)
 			time.sleep(60)
 
 
