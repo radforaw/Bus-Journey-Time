@@ -52,13 +52,28 @@ def getdata(route,day=0):
 
 def periods(res):
 	smooth=[(sum(res[n:n+4])/len(res[n:n+4]))>thresh+.2 for n in range(len(res)-5)]
-	print (smooth)
-	'''res=[]
-	last=Falsr
-	for n in smooth:
-		if 
-	'''
+	print (simplerldecoder(smooth))
 	
+
+def simplerldecoder(data):
+	flag=False
+	result={}
+	positioncounter=0
+	currentstart=0
+
+	for x in data:
+		if x==1:
+			if not flag:
+				flag=True
+				result[positioncounter]=1
+				currentstart=positioncounter
+			else:
+				result[currentstart]+=1
+		if x==0 and flag:
+			flag=False
+		positioncounter+=1
+	return result
+
 
 def quickyaynay(res):
 	if len(res)==0:
