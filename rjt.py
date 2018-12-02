@@ -12,9 +12,9 @@ import dt
 import numpy as np
 import csv
 
-#fileloc='/home/ubuntu/website/website/yourapp/static/'
+fileloc='/home/ubuntu/website/website/yourapp/static/'
 
-fileloc=''
+#fileloc=''
 
 quick={'Holloway-Circus-inbound':(43000305101,43000203501)}
 
@@ -82,17 +82,29 @@ def quickyaynay(res):
 	if len(res)==0:
 		return False
 	retval=[a[2]/a[1] for a in res[-5:]]
-	print ([a[2]/a[1] for a in res])
-	print(periods([a[2]/a[1] for a in res]))
+	#print ([a[2]/a[1] for a in res])
+	#print(periods([a[2]/a[1] for a in res]))
+	
 	rl= periods([a[2]/a[1] for a in res])
+	print (rl)
 	ret2=[]
 	for j in rl:
 		start=j
 		finish=j+rl[j]
-		if finish-start>3:
-			sttime=datetimer(res[start][3])
-			fintime=datetimer(res[finish][3])
-			ret2.append([sttime,fintime.time(),round(((fintime-sttime).seconds/3600),1),round(sorted([n[2]/n[1] for n in res[start:finish]])[int((finish-start)*.85)],1)])
+		sttime=datetimer(res[start][3])
+		fintime=datetimer(res[finish][3])
+		if (fintime-sttime).seconds>1800:
+			a=sttime
+			b=fintime.time()
+			c=round(((fintime-sttime).seconds/3600),1)
+			d=round(sorted([n[2]/n[1] if n[2]/n[1]<5.0 else 5.0 for n in res[start:finish]])[int((finish-start)*.85)],1)
+			cp=[0,2,5,10,20,100]
+			e=0
+			for n in range(5):
+				if cp[n+1]>c*d>cp[n]:
+					e=n+1
+
+			ret2.append([a,b,c,d,c*d,e])
 	###analyse this ^^^....
 	return sum([a>thresh for a in retval]),ret2
 	
@@ -143,7 +155,10 @@ if __name__=='__main__':
 	import time
 	while True:
 		plt.style.use('ggplot')
-		#quick=routes
+		quick=routes
+		with open('tesfile.csv','w') as csvfile:
+				w=csv.writer(csvfile)
+				w.writerow(['Location','date','time','duration','intensity'])
 		summ=[]
 		for n in quick:
 			ct=1
@@ -153,17 +168,13 @@ if __name__=='__main__':
 					continue
 				qyn=quickyaynay(a)
 				try:
-					summ+=qyn[1]
+					for t in qyn[1]:
+						summ.append([n]+t)
+						print ([n]+t)
 				except:
 					qyn=['None']
-				print (n,qyn[0],totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
+				#print (n,qyn[0],totalday(a,ct))#datetime.datetime.strptime(a[-1][3],'%Y-%m-%dT%H:%M:%S'),a[-1][3])
 				ct+=1
-			days=('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
-			with open('tesfile.csv','w') as csvfile:
-				w=csv.writer(csvfile)
-				w.writerow(['Location','date','time','duration','intensity (85%ile delay)'])
-				for dis in sorted(summ,reverse=True,key= lambda x:x[2]*x[3]):
-					w.writerow([n,days[dis[0].weekday()]+','+str(dis[0].date()),str(str(dis[0].time())+'-'+str(dis[1])),dis[2],dis[3]])
 			plt.title(n+"\nUpdated "+str(datetime.datetime.now()),fontsize=10)
 			x1,x2,y1,y2 = plt.axis()
 			plt.axis((5,24,y1,y2))
@@ -172,7 +183,7 @@ if __name__=='__main__':
 			plt.savefig(fileloc+n+'bus.png',dpi=150)
 			plt.close()
 			
-			'''wks=8
+			wks=8
 			thing=lastxweeks(datetime.datetime.now(),wks)
 			g2=[]
 			for a in thing:
@@ -191,9 +202,13 @@ if __name__=='__main__':
 			plt.ylabel('Delay minutes')
 			plt.savefig(fileloc+n+"busdelay.png")
 			plt.close()
-			'''
-			sys.exit(0)
 			time.sleep(60)
+			
+		with open('tesfile.csv','a') as csvfile:
+			w=csv.writer(csvfile)
+			for dis in sorted(summ,reverse=True,key= lambda x:x[3]*x[4]):
+				w.writerow([dis[0],datetime.datetime.strftime(dis[1],'%a, %d %b'),str(str(dis[1].time())[:5]+'-'+str(dis[2])[:5]),dis[3],dis[4],dis[6]])
+			
 
 
 # how many times 10% above threshold
